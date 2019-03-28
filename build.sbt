@@ -8,7 +8,7 @@ version := "0.1.1-SNAPSHOT"
 
 val circeV          = "0.10.0"
 val simpleSourcingV = "0.2.5"
-val simpleSagaV     = "0.1.1"
+val simpleSagaV     = "0.1.2-SNAPSHOT"
 val kafkaVersion    = "2.1.1"
 val catsV           = "1.4.0"
 

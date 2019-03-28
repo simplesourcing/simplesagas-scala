@@ -18,57 +18,49 @@ object JsonSerdes {
   import ProductCodecs._
   import JavaCodecs._
 
-  def aggregateSerdes[K: Encoder: Decoder, C: Encoder: Decoder, E: Encoder: Decoder, A: Encoder: Decoder]
-    : AggregateSerdes[K, C, E, A] =
-    new AggregateSerdes[K, C, E, A] {
-
-      val aks = serdeFromCodecs[K]
-
-      val crs =
-        productCodecs4[UUID, K, Long, C, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
-          v => (v.commandId().id, v.aggregateKey(), v.readSequence().getSeq, v.command()),
-          (id, k, rs, c) => new CommandRequest(CommandId.of(id), k, Sequence.position(rs), c)
-        ).asSerde
-
-      val vwss =
-        productCodecs2[E, Long, ValueWithSequence[E]]("value", "sequence")(
-          v => (v.value(), v.sequence().getSeq),
-          (v, s) => new ValueWithSequence(v, Sequence.position(s))
-        ).asSerde
-
-      val au = ResultEncoders.au[A]
-
-      val aus = au.asSerde
-      val cr  = ResultEncoders.cr[K]
-
-      val cid = mappedCodec[UUID, CommandId](_.id, CommandId.of).asSerde
-
-      override def aggregateKey(): Serde[K]                         = aks
-      override def commandRequest(): Serde[CommandRequest[K, C]]    = crs
-      override def commandId(): Serde[CommandId]                    = cid
-      override def valueWithSequence(): Serde[ValueWithSequence[E]] = vwss
-      override def aggregateUpdate(): Serde[AggregateUpdate[A]]     = aus
-      override def commandResponse(): Serde[CommandResponse[K]]     = cr
-    }
+  private def commandRequest[K: Encoder: Decoder, C: Encoder: Decoder] =
+    productCodecs4[UUID, K, Long, C, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
+      v => (v.commandId().id, v.aggregateKey(), v.readSequence().getSeq, v.command()),
+      (id, k, rs, c) => new CommandRequest(CommandId.of(id), k, Sequence.position(rs), c)
+    ).asSerde
 
   def commandSerdes[K: Encoder: Decoder, C: Encoder: Decoder]: CommandSerdes[K, C] =
     new CommandSerdes[K, C] {
 
-      val aks = serdeFromCodecs[K]
+      private val aks = serdeFromCodecs[K]
+      private val crs = JsonSerdes.commandRequest[K, C]
 
-      val crs: Serde[CommandRequest[K, C]] =
-        productCodecs4[K, C, Long, UUID, CommandRequest[K, C]]("key", "command", "readSequence", "commandId")(
-          v => (v.aggregateKey(), v.command(), v.readSequence().getSeq, v.commandId().id),
-          (k, v, rs, id) => new CommandRequest(CommandId.of(id), k, Sequence.position(rs), v)
-        ).asSerde
+      private val cid = mappedCodec[UUID, CommandId](_.id, CommandId.of).asSerde
+      private val cr  = ResultEncoders.cr[K]
 
-      val cid = mappedCodec[UUID, CommandId](_.id, CommandId.of).asSerde
-      val cr  = ResultEncoders.cr[K]
 
       override def aggregateKey(): Serde[K]                      = aks
       override def commandRequest(): Serde[CommandRequest[K, C]] = crs
       override def commandId(): Serde[CommandId]                 = cid
       override def commandResponse(): Serde[CommandResponse[K]]  = cr
+    }
+
+  def aggregateSerdes[K: Encoder: Decoder, C: Encoder: Decoder, E: Encoder: Decoder, A: Encoder: Decoder]
+  : AggregateSerdes[K, C, E, A] =
+    new AggregateSerdes[K, C, E, A] {
+
+      val cs = commandSerdes[K, C]
+
+      private val vwss =
+        productCodecs2[E, Long, ValueWithSequence[E]]("value", "sequence")(
+          v => (v.value(), v.sequence().getSeq),
+          (v, s) => new ValueWithSequence(v, Sequence.position(s))
+        ).asSerde
+
+      private val au = ResultEncoders.au[A]
+      private val aus = au.asSerde
+
+      override def aggregateKey(): Serde[K]                         = cs.aggregateKey()
+      override def commandRequest(): Serde[CommandRequest[K, C]]    = cs.commandRequest()
+      override def commandId(): Serde[CommandId]                    = cs.commandId()
+      override def valueWithSequence(): Serde[ValueWithSequence[E]] = vwss
+      override def aggregateUpdate(): Serde[AggregateUpdate[A]]     = aus
+      override def commandResponse(): Serde[CommandResponse[K]]     = cs.commandResponse()
     }
 
   def actionSerdes[A: Encoder: Decoder]: ActionSerdes[A] = new ActionSerdes[A] {
