@@ -1,14 +1,13 @@
+package io.simplesource.saga.user
+
 package object constants {
   // sagas
-  val sagaTopicPrefix = "saga_coordinator_"
   val sagaBaseName    = "saga"
 
   // action processors
-  val actionTopicPrefix  = "saga_action_processor_"
   val sagaActionBaseName = "saga_action"
 
   // commands (simple sourcing)
-  val commandTopicPrefix = "saga_command_"
   // user aggregate
   val userAggregateName = "user"
   val userActionType    = "sourcing_action_user"
@@ -16,7 +15,15 @@ package object constants {
   val accountAggregateName = "account"
   val accountActionType    = "sourcing_action_account"
 
+  val asyncActionType = "async_test_action"
+  val httpActionType = "http_action"
+
+  val asyncTestTopic = "async_test_topic"
+  val httpTopic = "fx_rates"
+
   val kafkaBootstrap = "localhost:9092"
+
+  val commandTopicPrefix = "simple_sourcing-"
 
   val partitions    = 6
   val replication   = 1

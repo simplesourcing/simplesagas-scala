@@ -8,6 +8,7 @@ import io.simplesource.kafka.dsl.{AggregateBuilder, EventSourcedApp, InvalidSequ
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.circe.generic.auto._
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy
+import io.simplesource.saga.user.constants
 
 object App {
   def main(args: Array[String]): Unit = {

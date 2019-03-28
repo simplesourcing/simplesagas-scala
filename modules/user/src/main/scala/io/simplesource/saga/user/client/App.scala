@@ -8,29 +8,28 @@ import java.util.concurrent.atomic.AtomicInteger
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import io.simplesource.api.CommandId
 import io.simplesource.data.Result
 import io.simplesource.kafka.dsl.KafkaConfig
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
 import io.simplesource.saga.client.builder.SagaClientBuilder
 import io.simplesource.saga.client.dsl.SagaDsl._
-import io.simplesource.saga.model.action.{ActionCommand, ActionId}
+import io.simplesource.saga.model.action.ActionId
 import io.simplesource.saga.model.api.SagaAPI
 import io.simplesource.saga.model.messages.SagaRequest
 import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.simplesource.saga.user.action.App.Key
 import io.simplesource.saga.user.action.HttpClient
-import io.simplesource.saga.user.command.model.auction.AccountCommand
-import io.simplesource.saga.user.command.model.user.UserCommand
-import io.simplesource.saga.user.shared.TopicUtils
+import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
+import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
+import io.simplesource.saga.user.constants
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
 object App {
-  private val logger                       = LoggerFactory.getLogger(classOf[App])
+  private val logger = LoggerFactory.getLogger(classOf[App])
   private val responseCount: AtomicInteger = new AtomicInteger(0)
 
   def main(args: Array[String]): Unit = {
@@ -43,7 +42,6 @@ object App {
             .withKafkaBootstrap("127.0.0.1:9092"))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
-      .withTopicConfig(TopicUtils.buildSteps(constants.sagaTopicPrefix, constants.sagaBaseName))
       .withClientId("saga-client-1")
       .build()
 
@@ -62,12 +60,14 @@ object App {
     }
   }
 
-  private def submitSagaRequest(sagaApi: SagaAPI[Json], request: Result[SagaError, SagaRequest[Json]]): Unit =
+  private def submitSagaRequest(
+      sagaApi: SagaAPI[Json],
+      request: Result[SagaError, SagaRequest[Json]]): Unit =
     request.fold[Unit](
       es => es.map(e => logger.error(e.getMessage)),
       r => {
         for {
-          _        <- sagaApi.submitSaga(r)
+          _ <- sagaApi.submitSaga(r)
           response <- sagaApi.getSagaResponse(r.sagaId, Duration.ofSeconds(60L))
           _ = {
             val count = responseCount.incrementAndGet()
@@ -78,25 +78,37 @@ object App {
       }
     )
 
-  def actionSequence(firstName: String,
-                     lastName: String,
-                     funds: BigDecimal,
-                     amounts: List[BigDecimal],
-                     adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
+  def actionSequence(
+      firstName: String,
+      lastName: String,
+      funds: BigDecimal,
+      amounts: List[BigDecimal],
+      adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
     val accountId = UUID.randomUUID()
+    val userId = UUID.randomUUID()
 
     val builder = SagaBuilder.create[Json]
 
-    val addUser = builder.addAction(
-      ActionId.random(),
-      constants.userActionType,
-      (UserCommand.Insert(userId = UUID.randomUUID(), firstName, lastName): UserCommand).asJson)
+    val addUser =
+      builder.addAction(ActionId.random(),
+                        constants.userActionType,
+                        UserCommandInfo(
+                          userId = userId,
+                          sequence = 0L,
+                          command = UserCommand.Insert(userId = userId,
+                                            firstName,
+                                            lastName)).asJson)
 
     val createAccount = builder.addAction(
       ActionId.random(),
       constants.accountActionType,
-      (AccountCommand
-        .CreateAccount(accountId = accountId, userName = s"$firstName $lastName", funds = 1000): AccountCommand).asJson
+      AccountCommandInfo(
+        accountId = accountId,
+        sequence = 0L,
+        command = AccountCommand.CreateAccount(accountId = accountId,
+                                               userName =
+                                                 s"$firstName $lastName",
+                                               funds = 1000)).asJson
     )
 
     val amountsWithIds = amounts.map((_, ActionId.random(), UUID.randomUUID()))
@@ -106,12 +118,20 @@ object App {
         builder.addAction(
           actionId,
           constants.accountActionType,
-          (AccountCommand.ReserveFunds(accountId = accountId,
-                                       reservationId = resId,
-                                       description = s"res-${resId.toString.take(4)}",
-                                       amount = amount): AccountCommand).asJson,
-          (AccountCommand
-            .CancelReservation(accountId = accountId, reservationId = resId): AccountCommand).asJson
+          AccountCommandInfo(
+            accountId = accountId,
+            sequence = 0L,
+            command = AccountCommand.ReserveFunds(accountId = accountId,
+                                          reservationId = resId,
+                                          description =
+                                            s"res-${resId.toString.take(4)}",
+                                          amount = amount)
+          ).asJson,
+          AccountCommandInfo(accountId = accountId,
+                             sequence = 0L,
+                             command = AccountCommand
+                               .CancelReservation(accountId = accountId,
+                                                  reservationId = resId)).asJson
         )
     }
 
@@ -120,36 +140,40 @@ object App {
         builder.addAction(
           ActionId.random(),
           constants.accountActionType,
-          (AccountCommand.ConfirmReservation(accountId = accountId,
-                                             reservationId = resId,
-                                             finalAmount = amount + adjustment): AccountCommand).asJson
+          AccountCommandInfo(accountId = accountId,
+                             sequence = 0L,
+                             command = AccountCommand.ConfirmReservation(
+                               accountId = accountId,
+                               reservationId = resId,
+                               finalAmount = amount + adjustment)).asJson
         )
     }
 
     val testAsyncInvoke: SubSaga[Json] = builder.addAction(
       ActionId.random(),
-      "async_test_action_type",
+      constants.asyncActionType,
       s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
 
     val v: HttpRequest[Key, String] = HttpRequest.ofWithBody[Key, String](
       Key("fx"),
       HttpVerb.Get,
       "https://api.exchangeratesapi.io/latest",
-      "fx_rates",
+      constants.httpTopic,
       null)
 
     import io.simplesource.saga.user.action.App.Key
     implicit val encoder: Encoder[HttpRequest[Key, String]] =
       HttpClient.httpRequest[Key, String]._1
 
-    val testHttpInvoke: SubSaga[Json] = builder.addAction(ActionId.random(), "http_action_type", v.asJson)
+    val testHttpInvoke: SubSaga[Json] =
+      builder.addAction(ActionId.random(), constants.httpActionType, v.asJson)
 
-    testAsyncInvoke
-      .andThen(testHttpInvoke)
-      .andThen(addUser)
+    addUser
       .andThen(createAccount)
       .andThen(inSeries(reservations.asJava))
       .andThen(inSeries(confirmations.asJava))
+      .andThen(testAsyncInvoke)
+      .andThen(testHttpInvoke)
 
     builder.build().map(s => new SagaRequest(SagaId.random(), s))
   }
