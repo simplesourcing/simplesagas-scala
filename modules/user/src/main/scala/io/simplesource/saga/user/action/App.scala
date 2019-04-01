@@ -9,7 +9,8 @@ import io.circe.generic.auto._
 import io.simplesource.data.{Result, Sequence}
 import io.simplesource.kafka.spec.TopicSpec
 import io.simplesource.saga.action.ActionApp
-import io.simplesource.saga.action.async.{AsyncBuilder, AsyncOutput, AsyncSpec, Callback}
+import io.simplesource.saga.action.async.AsyncSpec.AsyncResult
+import io.simplesource.saga.action.async.{AsyncBuilder, AsyncSpec, Callback}
 import io.simplesource.saga.action.http.{HttpBuilder, HttpOutput, HttpRequest, HttpSpec}
 import io.simplesource.saga.action.eventsourcing.{EventSourcingBuilder, EventSourcingSpec}
 import io.simplesource.saga.model.serdes.TopicSerdes
@@ -34,7 +35,7 @@ object App {
   def startActionProcessors(): Unit = {
     val  actionTopicBuilder: TopicConfigBuilder.BuildSteps = a => a
     val  commandTopicBuilder: TopicConfigBuilder.BuildSteps = a => a.withTopicPrefix(constants.commandTopicPrefix)
-    ActionApp.of[Json](JsonSerdes.actionSerdes[Json], Duration.ofDays(1))
+    ActionApp.of[Json](JsonSerdes.actionSerdes[Json])
       .withActionProcessor(EventSourcingBuilder.apply(accountSpec, actionTopicBuilder, commandTopicBuilder))
       .withActionProcessor(EventSourcingBuilder.apply(userSpec, actionTopicBuilder, commandTopicBuilder))
       .withActionProcessor(AsyncBuilder.apply(asyncSpec))
@@ -49,25 +50,27 @@ object App {
 
   lazy val userSpec = new EventSourcingSpec[Json, UserCommandInfo, UUID, UserCommand](
     constants.userActionType,
+    "user",
     json => json.as[UserCommandInfo].toResult.errorMap(e => e),
     _.command,
     _.userId,
     i => Sequence.position(i.sequence),
+    (_, _) => Optional.empty(),
     JsonSerdes.commandSerdes[UUID, UserCommand],
     Duration.of(20, ChronoUnit.SECONDS),
-    "user"
   )
 
   lazy val accountSpec =
     new EventSourcingSpec[Json, AccountCommandInfo, UUID, AccountCommand](
       constants.accountActionType,
+      "account",
       json => json.as[AccountCommandInfo].toResult.errorMap(e => e),
       _.command,
       _.accountId,
       i => Sequence.position(i.sequence),
+      (_, _) => Optional.empty(),
       JsonSerdes.commandSerdes[UUID, AccountCommand],
-      Duration.ofSeconds(30),
-      "account"
+      Duration.ofSeconds(30)
     )
 
   lazy val asyncSpec = new AsyncSpec[Json, String, String, String, String](
@@ -81,12 +84,11 @@ object App {
     }, //i => Future.successful(s"${i.length.toString}: $i"),
     appConfig.appId,
     Optional.of(
-      new AsyncOutput(
+      AsyncResult.of(
         o => Optional.of(Result.success(o)),
-        new TopicSerdes(Serdes.String(), Serdes.String()),
         i => i.toLowerCase.take(3),
-        _ => Optional.of(constants.asyncTestTopic),
-        List(new TopicCreation(constants.asyncTestTopic, new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+        (_, _, _) => Optional.empty(),
+        Optional.of(new TopicSerdes(Serdes.String(), Serdes.String())),
       )),
     Optional.of(Duration.ofSeconds(60))
   )
@@ -111,7 +113,7 @@ object App {
       new HttpOutput(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
         new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
-        List(new TopicCreation(constants.httpTopic, new TopicSpec(6, 1, Map.empty[String, String].asJava))).asJava
+        (_, _) => Optional.empty()
       )),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))
   )

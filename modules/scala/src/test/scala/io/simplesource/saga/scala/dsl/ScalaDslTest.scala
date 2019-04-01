@@ -13,12 +13,12 @@ class ScalaDslTest extends WordSpec with Matchers {
   implicit class DependsOps(action: String) {
     def shouldDependOnSet[A](dependsOn: Set[String])(implicit sagaState: Saga[A]) = {
       sagaState.actions.asScala.values
-        .find(_.actionType == s"actionType-$action")
+        .find(_.command.actionType == s"actionType-$action")
         .get
         .dependencies
         .asScala
         .map(sagaState.actions.get(_))
-        .map(_.actionType) shouldBe dependsOn.map(a => s"actionType-$a")
+        .map(_.command.actionType) shouldBe dependsOn.map(a => s"actionType-$a")
     }
 
     def shouldDependOn[A](dependsOn: String)(implicit sagaState: Saga[A]) =
