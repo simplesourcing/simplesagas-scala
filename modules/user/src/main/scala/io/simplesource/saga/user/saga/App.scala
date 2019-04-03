@@ -1,7 +1,5 @@
 package io.simplesource.saga.user.saga
 
-import java.time.Duration
-
 import io.circe.Json
 import io.simplesource.kafka.spec.WindowSpec
 import io.simplesource.saga.model.specs.{ActionSpec, SagaSpec}

@@ -5,7 +5,6 @@ import io.circe.{Decoder, Encoder}
 import io.simplesource.api.{CommandError, CommandId}
 import io.simplesource.data.{NonEmptyList, Result, Sequence}
 import io.simplesource.kafka.model.{AggregateUpdate, CommandResponse}
-import io.simplesource.saga.model.messages.UndoCommand
 import io.simplesource.saga.model.saga.SagaError
 import org.apache.kafka.common.serialization.Serde
 
