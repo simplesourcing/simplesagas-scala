@@ -154,7 +154,7 @@ object App {
       constants.asyncActionType,
       s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
 
-    val v: HttpRequest[Key, String] = HttpRequest.ofWithBody[Key, String](
+    val v: HttpRequest[Key, String] = HttpRequest.of[Key, String](
       Key("fx"),
       HttpVerb.Get,
       "https://api.exchangeratesapi.io/latest",
@@ -175,7 +175,7 @@ object App {
       .andThen(testAsyncInvoke)
       .andThen(testHttpInvoke)
 
-    builder.build().map(s => new SagaRequest(SagaId.random(), s))
+    builder.build().map(s => SagaRequest.of(SagaId.random(), s))
   }
 
 }

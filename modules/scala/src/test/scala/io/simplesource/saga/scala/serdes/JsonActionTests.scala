@@ -1,12 +1,12 @@
 package io.simplesource.saga.scala.serdes
-import java.util.UUID
+import java.util.{Optional, UUID}
 
 import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.api.CommandId
 import io.simplesource.data.Result
 import io.simplesource.saga.model.action.{ActionCommand, ActionId}
-import io.simplesource.saga.model.messages.{ActionRequest, ActionResponse}
+import io.simplesource.saga.model.messages.{ActionRequest, ActionResponse, UndoCommand}
 import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -38,30 +38,39 @@ class JsonActionTests extends WordSpec with Matchers {
 
     "serialise and deserialise action requests" in {
       val request =
-        ActionRequest
-          .builder()
-          .sagaId(SagaId.random())
-          .actionId(ActionId.random())
-          .actionCommand(ActionCommand
-            .of(CommandId.random(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson))
-          .actionType("action")
-          .build()
+        ActionRequest.of(
+          SagaId.random(),
+          ActionId.random(),
+          ActionCommand
+            .of(CommandId.random(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson, "action"),
+          false)
 
       val ser = serdes.request.serializer().serialize(topic, request)
       val de  = serdes.request.deserializer().deserialize(topic, ser)
       de shouldBe request
     }
 
-    "serialise and deserialise sucess responses" in {
+    "serialise and deserialise success responses (no undo)" in {
       val response =
-        new ActionResponse(SagaId.random(), ActionId.random(), CommandId.random(), Result.success(true))
+        ActionResponse.of[Json](SagaId.random(), ActionId.random(), CommandId.random(), Result.success(Optional.empty()))
+      val ser = serdes.response.serializer().serialize(topic, response)
+      val de  = serdes.response.deserializer().deserialize(topic, ser)
+      de shouldBe response
+    }
+
+    "serialise and deserialise success responses (with undo)" in {
+      val response =
+        ActionResponse.of[Json](SagaId.random(), ActionId.random(), CommandId.random(), Result.success(
+          Optional.of(
+            UndoCommand.of(
+            (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson, ""))))
       val ser = serdes.response.serializer().serialize(topic, response)
       val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
     }
 
     "serialise and deserialise failure responses" in {
-      val response = new ActionResponse(SagaId.random(),
+      val response = ActionResponse.of[Json](SagaId.random(),
                                         ActionId.random(),
                                         CommandId.random(),
                                         Result.failure(SagaError.of(SagaError.Reason.InternalError, "error")))

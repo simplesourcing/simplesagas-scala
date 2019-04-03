@@ -1,7 +1,5 @@
 package io.simplesource.saga.user.saga
 
-import java.time.Duration
-
 import io.circe.Json
 import io.simplesource.kafka.spec.WindowSpec
 import io.simplesource.saga.model.specs.{ActionSpec, SagaSpec}
@@ -18,14 +16,15 @@ object App {
   def startSagaCoordinator(): Unit = {
     val sagaSpec =
       new SagaSpec(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
-    SagaApp.of[Json](sagaSpec, actionSpec)
-      .withAction(constants.userActionType)
-      .withAction(constants.accountActionType)
-      .withAction(constants.asyncActionType)
-      .withAction(constants.httpActionType)
+    SagaApp
+      .of[Json](sagaSpec, actionSpec)
+      .withActions(constants.userActionType,
+                   constants.accountActionType,
+                   constants.asyncActionType,
+                   constants.httpActionType)
       .run(new StreamAppConfig("saga-coordinator-1", constants.kafkaBootstrap))
   }
 
   lazy val actionSpec: ActionSpec[Json] =
-    ActionSpec.of[Json](JsonSerdes.actionSerdes[Json], Duration.ofSeconds(30))
+    ActionSpec.of[Json](JsonSerdes.actionSerdes[Json])
 }
