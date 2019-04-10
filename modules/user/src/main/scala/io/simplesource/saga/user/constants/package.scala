@@ -2,7 +2,7 @@ package io.simplesource.saga.user
 
 package object constants {
   // sagas
-  val sagaBaseName    = "saga"
+  val sagaBaseName = "saga"
 
   // action processors
   val sagaActionBaseName = "saga_action"
@@ -10,10 +10,10 @@ package object constants {
   // commands (simple sourcing)
   // user aggregate
   val userAggregateName = "user"
-  val userActionType    = "sourcing_action_user"
+  val userActionType = "sourcing_action_user"
   // account aggregate
   val accountAggregateName = "account"
-  val accountActionType    = "sourcing_action_account"
+  val accountActionType = "sourcing_action_account"
 
   val asyncActionType = "async_test_action"
   val httpActionType = "http_action"
@@ -25,7 +25,7 @@ package object constants {
 
   val commandTopicPrefix = "simple_sourcing-"
 
-  val partitions    = 6
-  val replication   = 1
+  val partitions = 6
+  val replication = 1
   val retentionDays = 7
 }

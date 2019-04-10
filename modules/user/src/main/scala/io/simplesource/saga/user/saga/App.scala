@@ -22,7 +22,7 @@ object App {
                    constants.accountActionType,
                    constants.asyncActionType,
                    constants.httpActionType)
-      .run(new StreamAppConfig("saga-coordinator-1", constants.kafkaBootstrap))
+      .run(StreamAppConfig.of("saga-coordinator-1", constants.kafkaBootstrap))
   }
 
   lazy val actionSpec: ActionSpec[Json] =

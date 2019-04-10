@@ -21,8 +21,14 @@ import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.simplesource.saga.user.action.App.Key
 import io.simplesource.saga.user.action.HttpClient
-import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
-import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
+import io.simplesource.saga.user.command.model.auction.{
+  AccountCommand,
+  AccountCommandInfo
+}
+import io.simplesource.saga.user.command.model.user.{
+  UserCommand,
+  UserCommandInfo
+}
 import io.simplesource.saga.user.constants
 import org.slf4j.LoggerFactory
 
@@ -90,14 +96,15 @@ object App {
     val builder = SagaBuilder.create[Json]
 
     val addUser =
-      builder.addAction(ActionId.random(),
-                        constants.userActionType,
-                        UserCommandInfo(
-                          userId = userId,
-                          sequence = 0L,
-                          command = UserCommand.Insert(userId = userId,
-                                            firstName,
-                                            lastName)).asJson)
+      builder.addAction(
+        ActionId.random(),
+        constants.userActionType,
+        UserCommandInfo(userId = userId,
+                        sequence = 0L,
+                        command = UserCommand.Insert(userId = userId,
+                                                     firstName,
+                                                     lastName)).asJson
+      )
 
     val createAccount = builder.addAction(
       ActionId.random(),
@@ -121,7 +128,8 @@ object App {
           AccountCommandInfo(
             accountId = accountId,
             sequence = 0L,
-            command = AccountCommand.ReserveFunds(accountId = accountId,
+            command =
+              AccountCommand.ReserveFunds(accountId = accountId,
                                           reservationId = resId,
                                           description =
                                             s"res-${resId.toString.take(4)}",

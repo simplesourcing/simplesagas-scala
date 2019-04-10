@@ -10,14 +10,28 @@ import io.simplesource.data.{Result, Sequence}
 import io.simplesource.saga.action.ActionApp
 import io.simplesource.saga.action.async.AsyncResult
 import io.simplesource.saga.action.async.{AsyncBuilder, AsyncSpec, Callback}
-import io.simplesource.saga.action.http.{HttpBuilder, HttpOutput, HttpRequest, HttpSpec}
-import io.simplesource.saga.action.eventsourcing.{EventSourcingBuilder, EventSourcingSpec}
+import io.simplesource.saga.action.http.{
+  HttpBuilder,
+  HttpOutput,
+  HttpRequest,
+  HttpSpec
+}
+import io.simplesource.saga.action.eventsourcing.{
+  EventSourcingBuilder,
+  EventSourcingSpec
+}
 import io.simplesource.saga.model.serdes.TopicSerdes
 import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.saga.shared.streams.StreamAppConfig
 import io.simplesource.saga.shared.topics.TopicConfigBuilder
-import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
-import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
+import io.simplesource.saga.user.command.model.auction.{
+  AccountCommand,
+  AccountCommandInfo
+}
+import io.simplesource.saga.user.command.model.user.{
+  UserCommand,
+  UserCommandInfo
+}
 import io.simplesource.saga.user.constants
 import org.apache.kafka.common.serialization.Serdes
 
@@ -25,18 +39,22 @@ import scala.collection.JavaConverters._
 
 object App {
   val appConfig =
-    new StreamAppConfig("action-processor-1", "127.0.0.1:9092")
+    StreamAppConfig.of("action-processor-1", "127.0.0.1:9092")
 
   def main(args: Array[String]): Unit = {
     startActionProcessors()
   }
 
   def startActionProcessors(): Unit = {
-    val  actionTopicBuilder: TopicConfigBuilder.BuildSteps = a => a
-    val  commandTopicBuilder: TopicConfigBuilder.BuildSteps = a => a.withTopicPrefix(constants.commandTopicPrefix)
-    ActionApp.of[Json](JsonSerdes.actionSerdes[Json])
-      .withActionProcessor(EventSourcingBuilder.apply(accountSpec, actionTopicBuilder, commandTopicBuilder))
-      .withActionProcessor(EventSourcingBuilder.apply(userSpec, actionTopicBuilder, commandTopicBuilder))
+    val actionTopicBuilder: TopicConfigBuilder.BuildSteps = a => a
+    val commandTopicBuilder: TopicConfigBuilder.BuildSteps = a =>
+      a.withTopicPrefix(constants.commandTopicPrefix)
+    ActionApp
+      .of[Json](JsonSerdes.actionSerdes[Json])
+      .withActionProcessor(EventSourcingBuilder
+        .apply(accountSpec, actionTopicBuilder, commandTopicBuilder))
+      .withActionProcessor(EventSourcingBuilder
+        .apply(userSpec, actionTopicBuilder, commandTopicBuilder))
       .withActionProcessor(AsyncBuilder.apply(asyncSpec))
       .withActionProcessor(HttpBuilder.apply(httpSpec))
       .run(appConfig)
@@ -47,17 +65,18 @@ object App {
       eea.fold(e => Result.failure(e), a => Result.success(a))
   }
 
-  lazy val userSpec = EventSourcingSpec.of[Json, UserCommandInfo, UUID, UserCommand](
-    constants.userActionType,
-    "user",
-    json => json.as[UserCommandInfo].toResult.errorMap(e => e),
-    _.command,
-    _.userId,
-    i => Sequence.position(i.sequence),
-    (_, _) => Optional.empty(),
-    JsonSerdes.commandSerdes[UUID, UserCommand],
-    Duration.of(20, ChronoUnit.SECONDS),
-  )
+  lazy val userSpec =
+    EventSourcingSpec.of[Json, UserCommandInfo, UUID, UserCommand](
+      constants.userActionType,
+      "user",
+      json => json.as[UserCommandInfo].toResult.errorMap(e => e),
+      _.command,
+      _.userId,
+      i => Sequence.position(i.sequence),
+      (_, _) => Optional.empty(),
+      JsonSerdes.commandSerdes[UUID, UserCommand],
+      Duration.of(20, ChronoUnit.SECONDS),
+    )
 
   lazy val accountSpec =
     EventSourcingSpec.of[Json, AccountCommandInfo, UUID, AccountCommand](
@@ -94,10 +113,12 @@ object App {
 
   // Http currency fetch example
   final case class Key(id: String)
-  type Body   = Option[String]
-  type Input  = Json
+  type Body = Option[String]
+  type Input = Json
   type Output = Json
-  final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
+  final case class FXRates(date: String,
+                           base: String,
+                           rates: Map[String, BigDecimal])
 
   import io.circe.generic.auto._
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -111,7 +132,8 @@ object App {
     Optional.of(
       HttpOutput.of(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
-        Optional.of(new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates])),
+        Optional.of(new TopicSerdes(ProductCodecs.serdeFromCodecs[Key],
+                                    ProductCodecs.serdeFromCodecs[FXRates])),
         (_, _) => Optional.empty()
       )),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))
