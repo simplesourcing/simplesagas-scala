@@ -21,21 +21,15 @@ import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.simplesource.saga.user.action.App.Key
 import io.simplesource.saga.user.action.HttpClient
-import io.simplesource.saga.user.command.model.auction.{
-  AccountCommand,
-  AccountCommandInfo
-}
-import io.simplesource.saga.user.command.model.user.{
-  UserCommand,
-  UserCommandInfo
-}
+import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
+import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
 import io.simplesource.saga.user.constants
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
 object App {
-  private val logger = LoggerFactory.getLogger(classOf[App])
+  private val logger                       = LoggerFactory.getLogger(classOf[App])
   private val responseCount: AtomicInteger = new AtomicInteger(0)
 
   def main(args: Array[String]): Unit = {
@@ -66,14 +60,12 @@ object App {
     }
   }
 
-  private def submitSagaRequest(
-      sagaApi: SagaAPI[Json],
-      request: Result[SagaError, SagaRequest[Json]]): Unit =
+  private def submitSagaRequest(sagaApi: SagaAPI[Json], request: Result[SagaError, SagaRequest[Json]]): Unit =
     request.fold[Unit](
       es => es.map(e => logger.error(e.getMessage)),
       r => {
         for {
-          _ <- sagaApi.submitSaga(r)
+          _        <- sagaApi.submitSaga(r)
           response <- sagaApi.getSagaResponse(r.sagaId, Duration.ofSeconds(60L))
           _ = {
             val count = responseCount.incrementAndGet()
@@ -84,14 +76,13 @@ object App {
       }
     )
 
-  def actionSequence(
-      firstName: String,
-      lastName: String,
-      funds: BigDecimal,
-      amounts: List[BigDecimal],
-      adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
+  def actionSequence(firstName: String,
+                     lastName: String,
+                     funds: BigDecimal,
+                     amounts: List[BigDecimal],
+                     adjustment: BigDecimal = 0): Result[SagaError, SagaRequest[Json]] = {
     val accountId = UUID.randomUUID()
-    val userId = UUID.randomUUID()
+    val userId    = UUID.randomUUID()
 
     val builder = SagaBuilder.create[Json]
 
@@ -101,21 +92,17 @@ object App {
         constants.userActionType,
         UserCommandInfo(userId = userId,
                         sequence = 0L,
-                        command = UserCommand.Insert(userId = userId,
-                                                     firstName,
-                                                     lastName)).asJson
+                        command = UserCommand.Insert(userId = userId, firstName, lastName)).asJson
       )
 
     val createAccount = builder.addAction(
       ActionId.random(),
       constants.accountActionType,
-      AccountCommandInfo(
-        accountId = accountId,
-        sequence = 0L,
-        command = AccountCommand.CreateAccount(accountId = accountId,
-                                               userName =
-                                                 s"$firstName $lastName",
-                                               funds = 1000)).asJson
+      AccountCommandInfo(accountId = accountId,
+                         sequence = 0L,
+                         command = AccountCommand.CreateAccount(accountId = accountId,
+                                                                userName = s"$firstName $lastName",
+                                                                funds = 1000)).asJson
     )
 
     val amountsWithIds = amounts.map((_, ActionId.random(), UUID.randomUUID()))
@@ -128,18 +115,15 @@ object App {
           AccountCommandInfo(
             accountId = accountId,
             sequence = 0L,
-            command =
-              AccountCommand.ReserveFunds(accountId = accountId,
-                                          reservationId = resId,
-                                          description =
-                                            s"res-${resId.toString.take(4)}",
-                                          amount = amount)
+            command = AccountCommand.ReserveFunds(accountId = accountId,
+                                                  reservationId = resId,
+                                                  description = s"res-${resId.toString.take(4)}",
+                                                  amount = amount)
           ).asJson,
           AccountCommandInfo(accountId = accountId,
                              sequence = 0L,
                              command = AccountCommand
-                               .CancelReservation(accountId = accountId,
-                                                  reservationId = resId)).asJson
+                               .CancelReservation(accountId = accountId, reservationId = resId)).asJson
         )
     }
 
@@ -150,10 +134,10 @@ object App {
           constants.accountActionType,
           AccountCommandInfo(accountId = accountId,
                              sequence = 0L,
-                             command = AccountCommand.ConfirmReservation(
-                               accountId = accountId,
-                               reservationId = resId,
-                               finalAmount = amount + adjustment)).asJson
+                             command =
+                               AccountCommand.ConfirmReservation(accountId = accountId,
+                                                                 reservationId = resId,
+                                                                 finalAmount = amount + adjustment)).asJson
         )
     }
 
@@ -162,12 +146,11 @@ object App {
       constants.asyncActionType,
       s"Hello World, time is: ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}".asJson)
 
-    val v: HttpRequest[Key, String] = HttpRequest.of[Key, String](
-      Key("fx"),
-      HttpVerb.Get,
-      "https://api.exchangeratesapi.io/latest",
-      constants.httpTopic,
-      null)
+    val v: HttpRequest[Key, String] = HttpRequest.of[Key, String](Key("fx"),
+                                                                  HttpVerb.Get,
+                                                                  "https://api.exchangeratesapi.io/latest",
+                                                                  constants.httpTopic,
+                                                                  null)
 
     import io.simplesource.saga.user.action.App.Key
     implicit val encoder: Encoder[HttpRequest[Key, String]] =

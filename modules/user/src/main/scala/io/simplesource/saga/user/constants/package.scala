@@ -10,22 +10,22 @@ package object constants {
   // commands (simple sourcing)
   // user aggregate
   val userAggregateName = "user"
-  val userActionType = "sourcing_action_user"
+  val userActionType    = "sourcing_action_user"
   // account aggregate
   val accountAggregateName = "account"
-  val accountActionType = "sourcing_action_account"
+  val accountActionType    = "sourcing_action_account"
 
   val asyncActionType = "async_test_action"
-  val httpActionType = "http_action"
+  val httpActionType  = "http_action"
 
   val asyncTestTopic = "async_test_topic"
-  val httpTopic = "fx_rates"
+  val httpTopic      = "fx_rates"
 
   val kafkaBootstrap = "localhost:9092"
 
   val commandTopicPrefix = "simple_sourcing-"
 
-  val partitions = 6
-  val replication = 1
+  val partitions    = 6
+  val replication   = 1
   val retentionDays = 7
 }

@@ -27,27 +27,25 @@ class JsonAggregateTests extends WordSpec with Matchers {
 
     "serialise and deserialise aggregate key UUIDs" in {
       val initial = UUID.randomUUID()
-      val ser = serdes.aggregateKey().serializer().serialize(topic, initial)
-      val de = serdes.aggregateKey().deserializer().deserialize(topic, ser)
+      val ser     = serdes.aggregateKey().serializer().serialize(topic, initial)
+      val de      = serdes.aggregateKey().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 
     "serialise and deserialise command requests" in {
       val initial =
-        new CommandRequest[UUID, UserCommand](
-          CommandId.random(),
-          UUID.randomUUID(),
-          Sequence.first(),
-          UserCommand.Insert(UUID.randomUUID(), "fn", "ln"))
+        new CommandRequest[UUID, UserCommand](CommandId.random(),
+                                              UUID.randomUUID(),
+                                              Sequence.first(),
+                                              UserCommand.Insert(UUID.randomUUID(), "fn", "ln"))
       val ser = serdes.commandRequest().serializer().serialize(topic, initial)
-      val de = serdes.commandRequest().deserializer().deserialize(topic, ser)
+      val de  = serdes.commandRequest().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 
     "serialise and deserialise events" in {
       val initial =
-        new ValueWithSequence[UserEvent](UserEvent.Inserted("fn", "ln"),
-                                         Sequence.first())
+        new ValueWithSequence[UserEvent](UserEvent.Inserted("fn", "ln"), Sequence.first())
       val ser =
         serdes.valueWithSequence().serializer().serialize(topic, initial)
       val de = serdes.valueWithSequence().deserializer().deserialize(topic, ser)
@@ -55,10 +53,9 @@ class JsonAggregateTests extends WordSpec with Matchers {
     }
 
     "serialise and deserialise aggregate updates" in {
-      val initial = new AggregateUpdate[Option[User]](Some(User("fn", "ln", 0)),
-                                                      Sequence.first())
-      val ser = serdes.aggregateUpdate().serializer().serialize(topic, initial)
-      val de = serdes.aggregateUpdate().deserializer().deserialize(topic, ser)
+      val initial = new AggregateUpdate[Option[User]](Some(User("fn", "ln", 0)), Sequence.first())
+      val ser     = serdes.aggregateUpdate().serializer().serialize(topic, initial)
+      val de      = serdes.aggregateUpdate().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 
@@ -69,20 +66,18 @@ class JsonAggregateTests extends WordSpec with Matchers {
                             Sequence.first(),
                             Result.success(Sequence.first().next()))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
-      val de = serdes.commandResponse().deserializer().deserialize(topic, ser)
+      val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 
     "serialise and deserialise command response failure" in {
       val initial =
-        new CommandResponse(
-          CommandId.random(),
-          UUID.randomUUID(),
-          Sequence.first(),
-          Result.failure(
-            CommandError.of(Reason.InvalidCommand, "Invalid command")))
+        new CommandResponse(CommandId.random(),
+                            UUID.randomUUID(),
+                            Sequence.first(),
+                            Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
-      val de = serdes.commandResponse().deserializer().deserialize(topic, ser)
+      val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
   }

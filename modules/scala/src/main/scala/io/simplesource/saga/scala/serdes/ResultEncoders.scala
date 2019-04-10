@@ -12,8 +12,7 @@ object ResultEncoders {
   import JavaCodecs._
   import ProductCodecs._
 
-  def au[A: Encoder: Decoder]
-    : (Encoder[AggregateUpdate[A]], Decoder[AggregateUpdate[A]]) =
+  def au[A: Encoder: Decoder]: (Encoder[AggregateUpdate[A]], Decoder[AggregateUpdate[A]]) =
     productCodecs2[A, Long, AggregateUpdate[A]]("aggregate", "sequence")(
       v => (v.aggregate(), v.sequence().getSeq),
       (v, s) => new AggregateUpdate(v, Sequence.position(s))
@@ -26,8 +25,7 @@ object ResultEncoders {
     io.circe.generic.semiauto
       .deriveEncoder[EitherNel[E, A]]
       .contramapObject(r => {
-        r.fold[EitherNel[E, A]](e => Left[NonEmptyList[E], A](e),
-                                a => Right[NonEmptyList[E], A](a))
+        r.fold[EitherNel[E, A]](e => Left[NonEmptyList[E], A](e), a => Right[NonEmptyList[E], A](a))
       })
 
   implicit def resd[E: Decoder, A: Decoder]: Decoder[Result[E, A]] =
@@ -48,21 +46,12 @@ object ResultEncoders {
       implicitly[Decoder[(String, String)]]
         .map(s => CommandError.of(CommandError.Reason.valueOf(s._1), s._2))
 
-    productCodecs4[K,
-                   UUID,
-                   Long,
-                   Result[CommandError, Sequence],
-                   CommandResponse[K]]("key",
-                                       "commandId",
-                                       "readSequence",
-                                       "sequenceResult")(
-      x =>
-        (x.aggregateKey(),
-         x.commandId.id,
-         x.readSequence().getSeq,
-         x.sequenceResult()),
-      (key, id, seq, ur) =>
-        new CommandResponse(CommandId.of(id), key, Sequence.position(seq), ur)
+    productCodecs4[K, UUID, Long, Result[CommandError, Sequence], CommandResponse[K]]("key",
+                                                                                      "commandId",
+                                                                                      "readSequence",
+                                                                                      "sequenceResult")(
+      x => (x.aggregateKey(), x.commandId.id, x.readSequence().getSeq, x.sequenceResult()),
+      (key, id, seq, ur) => new CommandResponse(CommandId.of(id), key, Sequence.position(seq), ur)
     )
   }.asSerde
 

@@ -27,13 +27,12 @@ class JsonCommandTests extends WordSpec with Matchers {
 
     "serialise and deserialise command requests" in {
       val initial =
-        new CommandRequest[UUID, UserCommand](
-          CommandId.random(),
-          UUID.randomUUID(),
-          Sequence.first(),
-          UserCommand.Insert(UUID.randomUUID(), "fn", "ln"))
+        new CommandRequest[UUID, UserCommand](CommandId.random(),
+                                              UUID.randomUUID(),
+                                              Sequence.first(),
+                                              UserCommand.Insert(UUID.randomUUID(), "fn", "ln"))
       val ser = serdes.commandRequest().serializer().serialize(topic, initial)
-      val de = serdes.commandRequest().deserializer().deserialize(topic, ser)
+      val de  = serdes.commandRequest().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 
@@ -44,20 +43,18 @@ class JsonCommandTests extends WordSpec with Matchers {
                             Sequence.first(),
                             Result.success(Sequence.first().next()))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
-      val de = serdes.commandResponse().deserializer().deserialize(topic, ser)
+      val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
 
     "serialise and deserialise command response failure" in {
       val initial =
-        new CommandResponse(
-          CommandId.random(),
-          UUID.randomUUID(),
-          Sequence.first(),
-          Result.failure(
-            CommandError.of(Reason.InvalidCommand, "Invalid command")))
+        new CommandResponse(CommandId.random(),
+                            UUID.randomUUID(),
+                            Sequence.first(),
+                            Result.failure(CommandError.of(Reason.InvalidCommand, "Invalid command")))
       val ser = serdes.commandResponse().serializer().serialize(topic, initial)
-      val de = serdes.commandResponse().deserializer().deserialize(topic, ser)
+      val de  = serdes.commandResponse().deserializer().deserialize(topic, ser)
       de shouldBe initial
     }
   }

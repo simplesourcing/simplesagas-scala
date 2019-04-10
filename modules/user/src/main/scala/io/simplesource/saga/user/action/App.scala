@@ -10,28 +10,14 @@ import io.simplesource.data.{Result, Sequence}
 import io.simplesource.saga.action.ActionApp
 import io.simplesource.saga.action.async.AsyncResult
 import io.simplesource.saga.action.async.{AsyncBuilder, AsyncSpec, Callback}
-import io.simplesource.saga.action.http.{
-  HttpBuilder,
-  HttpOutput,
-  HttpRequest,
-  HttpSpec
-}
-import io.simplesource.saga.action.eventsourcing.{
-  EventSourcingBuilder,
-  EventSourcingSpec
-}
+import io.simplesource.saga.action.http.{HttpBuilder, HttpOutput, HttpRequest, HttpSpec}
+import io.simplesource.saga.action.eventsourcing.{EventSourcingBuilder, EventSourcingSpec}
 import io.simplesource.saga.model.serdes.TopicSerdes
 import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
 import io.simplesource.saga.shared.streams.StreamAppConfig
 import io.simplesource.saga.shared.topics.TopicConfigBuilder
-import io.simplesource.saga.user.command.model.auction.{
-  AccountCommand,
-  AccountCommandInfo
-}
-import io.simplesource.saga.user.command.model.user.{
-  UserCommand,
-  UserCommandInfo
-}
+import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
+import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
 import io.simplesource.saga.user.constants
 import org.apache.kafka.common.serialization.Serdes
 
@@ -113,12 +99,10 @@ object App {
 
   // Http currency fetch example
   final case class Key(id: String)
-  type Body = Option[String]
-  type Input = Json
+  type Body   = Option[String]
+  type Input  = Json
   type Output = Json
-  final case class FXRates(date: String,
-                           base: String,
-                           rates: Map[String, BigDecimal])
+  final case class FXRates(date: String, base: String, rates: Map[String, BigDecimal])
 
   import io.circe.generic.auto._
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -132,8 +116,8 @@ object App {
     Optional.of(
       HttpOutput.of(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
-        Optional.of(new TopicSerdes(ProductCodecs.serdeFromCodecs[Key],
-                                    ProductCodecs.serdeFromCodecs[FXRates])),
+        Optional.of(
+          new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates])),
         (_, _) => Optional.empty()
       )),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))
