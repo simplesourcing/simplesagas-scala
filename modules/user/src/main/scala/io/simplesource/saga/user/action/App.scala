@@ -25,18 +25,22 @@ import scala.collection.JavaConverters._
 
 object App {
   val appConfig =
-    new StreamAppConfig("action-processor-1", "127.0.0.1:9092")
+    StreamAppConfig.of("action-processor-1", "127.0.0.1:9092")
 
   def main(args: Array[String]): Unit = {
     startActionProcessors()
   }
 
   def startActionProcessors(): Unit = {
-    val  actionTopicBuilder: TopicConfigBuilder.BuildSteps = a => a
-    val  commandTopicBuilder: TopicConfigBuilder.BuildSteps = a => a.withTopicPrefix(constants.commandTopicPrefix)
-    ActionApp.of[Json](JsonSerdes.actionSerdes[Json])
-      .withActionProcessor(EventSourcingBuilder.apply(accountSpec, actionTopicBuilder, commandTopicBuilder))
-      .withActionProcessor(EventSourcingBuilder.apply(userSpec, actionTopicBuilder, commandTopicBuilder))
+    val actionTopicBuilder: TopicConfigBuilder.BuildSteps = a => a
+    val commandTopicBuilder: TopicConfigBuilder.BuildSteps = a =>
+      a.withTopicPrefix(constants.commandTopicPrefix)
+    ActionApp
+      .of[Json](JsonSerdes.actionSerdes[Json])
+      .withActionProcessor(EventSourcingBuilder
+        .apply(accountSpec, actionTopicBuilder, commandTopicBuilder))
+      .withActionProcessor(EventSourcingBuilder
+        .apply(userSpec, actionTopicBuilder, commandTopicBuilder))
       .withActionProcessor(AsyncBuilder.apply(asyncSpec))
       .withActionProcessor(HttpBuilder.apply(httpSpec))
       .run(appConfig)
@@ -47,17 +51,18 @@ object App {
       eea.fold(e => Result.failure(e), a => Result.success(a))
   }
 
-  lazy val userSpec = EventSourcingSpec.of[Json, UserCommandInfo, UUID, UserCommand](
-    constants.userActionType,
-    "user",
-    json => json.as[UserCommandInfo].toResult.errorMap(e => e),
-    _.command,
-    _.userId,
-    i => Sequence.position(i.sequence),
-    (_, _) => Optional.empty(),
-    JsonSerdes.commandSerdes[UUID, UserCommand],
-    Duration.of(20, ChronoUnit.SECONDS),
-  )
+  lazy val userSpec =
+    EventSourcingSpec.of[Json, UserCommandInfo, UUID, UserCommand](
+      constants.userActionType,
+      "user",
+      json => json.as[UserCommandInfo].toResult.errorMap(e => e),
+      _.command,
+      _.userId,
+      i => Sequence.position(i.sequence),
+      (_, _) => Optional.empty(),
+      JsonSerdes.commandSerdes[UUID, UserCommand],
+      Duration.of(20, ChronoUnit.SECONDS),
+    )
 
   lazy val accountSpec =
     EventSourcingSpec.of[Json, AccountCommandInfo, UUID, AccountCommand](
@@ -111,7 +116,8 @@ object App {
     Optional.of(
       HttpOutput.of(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
-        Optional.of(new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates])),
+        Optional.of(
+          new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates])),
         (_, _) => Optional.empty()
       )),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))

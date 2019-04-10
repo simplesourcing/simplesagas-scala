@@ -42,8 +42,12 @@ class JsonActionTests extends WordSpec with Matchers {
           SagaId.random(),
           ActionId.random(),
           ActionCommand
-            .of(CommandId.random(), (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson, "action"),
-          false)
+            .of(CommandId.random(),
+                (UserCommand
+                  .Insert(UUID.randomUUID(), "", ""): UserCommand).asJson,
+                "action"),
+          false
+        )
 
       val ser = serdes.request.serializer().serialize(topic, request)
       val de  = serdes.request.deserializer().deserialize(topic, ser)
@@ -52,7 +56,11 @@ class JsonActionTests extends WordSpec with Matchers {
 
     "serialise and deserialise success responses (no undo)" in {
       val response =
-        ActionResponse.of[Json](SagaId.random(), ActionId.random(), CommandId.random(), Result.success(Optional.empty()))
+        ActionResponse.of[Json](SagaId.random(),
+                                ActionId.random(),
+                                CommandId.random(),
+                                false,
+                                Result.success(Optional.empty()))
       val ser = serdes.response.serializer().serialize(topic, response)
       val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
@@ -60,20 +68,27 @@ class JsonActionTests extends WordSpec with Matchers {
 
     "serialise and deserialise success responses (with undo)" in {
       val response =
-        ActionResponse.of[Json](SagaId.random(), ActionId.random(), CommandId.random(), Result.success(
-          Optional.of(
-            UndoCommand.of(
-            (UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson, ""))))
+        ActionResponse.of[Json](
+          SagaId.random(),
+          ActionId.random(),
+          CommandId.random(),
+          false,
+          Result.success(
+            Optional.of(
+              UndoCommand.of((UserCommand.Insert(UUID.randomUUID(), "", ""): UserCommand).asJson, "")))
+        )
       val ser = serdes.response.serializer().serialize(topic, response)
       val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
     }
 
     "serialise and deserialise failure responses" in {
-      val response = ActionResponse.of[Json](SagaId.random(),
-                                        ActionId.random(),
-                                        CommandId.random(),
-                                        Result.failure(SagaError.of(SagaError.Reason.InternalError, "error")))
+      val response =
+        ActionResponse.of[Json](SagaId.random(),
+                                ActionId.random(),
+                                CommandId.random(),
+                                false,
+                                Result.failure(SagaError.of(SagaError.Reason.InternalError, "error")))
       val ser = serdes.response.serializer().serialize(topic, response)
       val de  = serdes.response.deserializer().deserialize(topic, ser)
       de shouldBe response
