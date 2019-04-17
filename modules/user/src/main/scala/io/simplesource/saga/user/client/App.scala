@@ -38,8 +38,9 @@ object App {
 
     val sagaClientBuilder: SagaClientBuilder[Json] =
       SagaClientBuilder.create[Json](
-        (propBuilder: PropertiesBuilder) => propBuilder.withStreamAppConfig(
-          StreamAppConfig.of("saga-app-1", "127.0.0.1:9092")
+        (propBuilder: PropertiesBuilder) =>
+          propBuilder.withStreamAppConfig(
+            StreamAppConfig.of("saga-app-1", "127.0.0.1:9092")
         ))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
