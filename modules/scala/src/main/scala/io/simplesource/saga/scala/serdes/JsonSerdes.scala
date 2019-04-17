@@ -7,8 +7,7 @@ import io.simplesource.api.CommandId
 import io.simplesource.data.{Result, Sequence}
 import io.simplesource.kafka.api.{AggregateSerdes, CommandSerdes}
 import io.simplesource.kafka.model._
-import io.simplesource.saga.model.action.{ActionCommand, ActionId, ActionStatus, SagaAction}
-import io.simplesource.saga.model.messages.UndoCommand
+import io.simplesource.saga.model.action.{ActionCommand, ActionId, ActionStatus, SagaAction, UndoCommand}
 import io.simplesource.saga.model.saga
 import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.model.serdes.{ActionSerdes, SagaSerdes}

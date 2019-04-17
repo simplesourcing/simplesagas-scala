@@ -12,13 +12,15 @@ import io.simplesource.data.Result
 import io.simplesource.kafka.dsl.KafkaConfig
 import io.simplesource.saga.action.http.HttpRequest
 import io.simplesource.saga.action.http.HttpRequest.HttpVerb
-import io.simplesource.saga.client.builder.SagaClientBuilder
-import io.simplesource.saga.client.dsl.SagaDsl._
+import io.simplesource.saga.client.api.SagaClientBuilder
+import io.simplesource.saga.client.dsl.SagaDSL._
 import io.simplesource.saga.model.action.ActionId
 import io.simplesource.saga.model.api.SagaAPI
+import io.simplesource.saga.model.config.StreamAppConfig
 import io.simplesource.saga.model.messages.SagaRequest
 import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import io.simplesource.saga.scala.serdes.JsonSerdes
+import io.simplesource.saga.shared.properties.PropertiesBuilder
 import io.simplesource.saga.user.action.App.Key
 import io.simplesource.saga.user.action.HttpClient
 import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
@@ -35,11 +37,10 @@ object App {
   def main(args: Array[String]): Unit = {
 
     val sagaClientBuilder: SagaClientBuilder[Json] =
-      new SagaClientBuilder[Json](
-        (kafkaConfigBuilder: KafkaConfig.Builder) =>
-          kafkaConfigBuilder
-            .withKafkaApplicationId("saga-app-1")
-            .withKafkaBootstrap("127.0.0.1:9092"))
+      SagaClientBuilder.create[Json](
+        (propBuilder: PropertiesBuilder) => propBuilder.withStreamAppConfig(
+          StreamAppConfig.of("saga-app-1", "127.0.0.1:9092")
+        ))
     val api: SagaAPI[Json] = sagaClientBuilder
       .withSerdes(JsonSerdes.sagaSerdes[Json])
       .withClientId("saga-client-1")

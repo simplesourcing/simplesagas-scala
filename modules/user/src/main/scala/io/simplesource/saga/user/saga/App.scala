@@ -2,9 +2,9 @@ package io.simplesource.saga.user.saga
 
 import io.circe.Json
 import io.simplesource.kafka.spec.WindowSpec
+import io.simplesource.saga.model.config.StreamAppConfig
 import io.simplesource.saga.model.specs.{ActionSpec, SagaSpec}
-import io.simplesource.saga.saga.SagaApp
-import io.simplesource.saga.shared.streams.StreamAppConfig
+import io.simplesource.saga.saga.app.SagaApp
 import io.simplesource.saga.scala.serdes.JsonSerdes
 import io.simplesource.saga.user.constants
 
@@ -15,7 +15,7 @@ object App {
 
   def startSagaCoordinator(): Unit = {
     val sagaSpec =
-      new SagaSpec(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
+      SagaSpec.of(JsonSerdes.sagaSerdes[Json], new WindowSpec(3600L))
     SagaApp
       .of[Json](sagaSpec, actionSpec)
       .withActions(constants.userActionType,

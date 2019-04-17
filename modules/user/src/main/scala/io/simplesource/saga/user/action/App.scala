@@ -12,9 +12,9 @@ import io.simplesource.saga.action.async.AsyncResult
 import io.simplesource.saga.action.async.{AsyncBuilder, AsyncSpec, Callback}
 import io.simplesource.saga.action.http.{HttpBuilder, HttpOutput, HttpRequest, HttpSpec}
 import io.simplesource.saga.action.eventsourcing.{EventSourcingBuilder, EventSourcingSpec}
+import io.simplesource.saga.model.config.StreamAppConfig
 import io.simplesource.saga.model.serdes.TopicSerdes
 import io.simplesource.saga.scala.serdes.{JsonSerdes, ProductCodecs}
-import io.simplesource.saga.shared.streams.StreamAppConfig
 import io.simplesource.saga.shared.topics.TopicConfigBuilder
 import io.simplesource.saga.user.command.model.auction.{AccountCommand, AccountCommandInfo}
 import io.simplesource.saga.user.command.model.user.{UserCommand, UserCommandInfo}
@@ -43,7 +43,7 @@ object App {
         .apply(userSpec, actionTopicBuilder, commandTopicBuilder))
       .withActionProcessor(AsyncBuilder.apply(asyncSpec))
       .withActionProcessor(HttpBuilder.apply(httpSpec))
-      .run(appConfig)
+      .run(propBuilder => propBuilder.withStreamAppConfig(appConfig))
   }
 
   implicit class EOps[E, A](eea: Either[E, A]) {
@@ -91,9 +91,9 @@ object App {
       AsyncResult.of(
         o => Optional.of(Result.success(o)),
         i => i.toLowerCase.take(3),
-        (_, _, _) => Optional.empty(),
-        Optional.of(new TopicSerdes(Serdes.String(), Serdes.String())),
+        new TopicSerdes(Serdes.String(), Serdes.String()),
       )),
+    (_, _) => Optional.empty(),
     Optional.of(Duration.ofSeconds(60))
   )
 
@@ -116,10 +116,9 @@ object App {
     Optional.of(
       HttpOutput.of(
         (o: Input) => Optional.of(o.as[FXRates].toResult.errorMap(e => e)),
-        Optional.of(
-          new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates])),
-        (_, _) => Optional.empty()
+        new TopicSerdes(ProductCodecs.serdeFromCodecs[Key], ProductCodecs.serdeFromCodecs[FXRates]),
       )),
+    (_, _) => Optional.empty(),
     Optional.of(Duration.of(60, ChronoUnit.SECONDS))
   )
 }

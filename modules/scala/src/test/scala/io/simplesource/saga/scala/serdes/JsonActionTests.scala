@@ -5,8 +5,8 @@ import io.circe.Json
 import io.circe.generic.auto._
 import io.simplesource.api.CommandId
 import io.simplesource.data.Result
-import io.simplesource.saga.model.action.{ActionCommand, ActionId}
-import io.simplesource.saga.model.messages.{ActionRequest, ActionResponse, UndoCommand}
+import io.simplesource.saga.model.action.{ActionCommand, ActionId, UndoCommand}
+import io.simplesource.saga.model.messages.{ActionRequest, ActionResponse}
 import io.simplesource.saga.model.saga.{SagaError, SagaId}
 import org.scalatest.{Matchers, WordSpec}
 

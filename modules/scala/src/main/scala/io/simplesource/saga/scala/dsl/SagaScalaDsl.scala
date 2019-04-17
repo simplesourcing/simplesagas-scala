@@ -1,7 +1,7 @@
 package io.simplesource.saga.scala.dsl
 
-import io.simplesource.saga.client.dsl.SagaDsl
-import io.simplesource.saga.client.dsl.SagaDsl.SubSaga
+import io.simplesource.saga.client.dsl.SagaDSL
+import io.simplesource.saga.client.dsl.SagaDSL.SubSaga
 
 import scala.collection.JavaConverters._
 
@@ -18,7 +18,7 @@ trait SagaScalaDsl {
     inParallelImpl(subSagas)
 
   private def inParallelImpl[A](subSagas: List[SubSaga[A]]): SubSaga[A] =
-    SagaDsl.inParallel(subSagas.asJava)
+    SagaDSL.inParallel(subSagas.asJava)
 
   def inSeries[A](subSagas: SubSaga[A]*): SubSaga[A] =
     inSeriesImpl(List(subSagas: _*))
@@ -27,7 +27,7 @@ trait SagaScalaDsl {
     inSeriesImpl(subSagas)
 
   private def inSeriesImpl[A](subSagas: List[SubSaga[A]]): SubSaga[A] =
-    SagaDsl.inSeries(subSagas.asJava)
+    SagaDSL.inSeries(subSagas.asJava)
 
   implicit class SBList[A](sbList: List[SubSaga[A]]) {
     def inSeries(): SubSaga[A] = inSeriesImpl(sbList)
