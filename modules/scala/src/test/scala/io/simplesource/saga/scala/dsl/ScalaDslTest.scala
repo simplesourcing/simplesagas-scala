@@ -3,7 +3,7 @@ package io.simplesource.saga.scala.dsl
 import io.simplesource.api.CommandId
 import io.simplesource.saga.model.action.{ActionCommand, ActionId}
 import io.simplesource.saga.model.saga.Saga
-import io.simplesource.saga.client.dsl.SagaDsl.SagaBuilder
+import io.simplesource.saga.client.dsl.SagaDSL.SagaBuilder
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConverters._

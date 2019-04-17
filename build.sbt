@@ -8,7 +8,7 @@ version := "0.1.1-SNAPSHOT"
 
 val circeV          = "0.10.0"
 val simpleSourcingV = "0.2.6"
-val simpleSagaV     = "0.1.4"
+val simpleSagaV     = "0.1.5"
 val kafkaVersion    = "2.1.1"
 val catsV           = "1.4.0"
 
@@ -20,7 +20,6 @@ lazy val baseDeps = Seq(
     "org.apache.kafka" %% "kafka"                             % kafkaVersion,
     "io.simplesource"  % "simplesource-command-api"           % simpleSourcingV,
     "io.simplesource"  % "simplesource-command-kafka"         % simpleSourcingV,
-    "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV,
     "io.simplesource"  % "simplesource-command-serialization" % simpleSourcingV,
     "io.simplesource"  % "simplesaga-model"                   % simpleSagaV,
     "io.simplesource"  % "simplesaga-action"                  % simpleSagaV,
